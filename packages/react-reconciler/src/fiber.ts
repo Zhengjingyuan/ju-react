@@ -1,9 +1,10 @@
 import { Props, Key, Ref } from "share/ReactTypes";
 import { WorkTag } from "./workTags";
 import { Flags, NoFlags } from "./fiberFlags";
+import { Container } from "./hostConfig";
 
 export class FiberNode {
-    type: any;
+	type: any;
 	tag: WorkTag;
 	pendingProps: Props;
 	key: Key;
@@ -15,7 +16,7 @@ export class FiberNode {
 	ref: Ref | null;
 	index: number;
 
-    memoizedProps: Props | null;
+	memoizedProps: Props | null;
 	memoizedState: any;
 	alternate: FiberNode | null;
 	flags: Flags;
@@ -23,18 +24,17 @@ export class FiberNode {
 	updateQueue: unknown;
 	deletions: FiberNode[] | null;
 
-    constructor(tag: WorkTag, pendingProps: Props, key: Key){
-        //实例属性
+	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
+		//实例属性
 		this.tag = tag;
 		this.key = key || null;
 		//其对应的DOM
 		this.stateNode = null;
 		this.type = null;
 
-        //构成树状结构
 		//父级FiberNode
 		this.return = null;
-        //右边的兄弟FiberNode
+		//右边的兄弟FiberNode
 		this.sibling = null;
 		//子FiberNode
 		this.child = null;
@@ -43,7 +43,7 @@ export class FiberNode {
 
 		this.ref = null;
 
-        //工作单元
+		//工作单元
 		this.pendingProps = pendingProps;
 		this.memoizedProps = null;
 		this.updateQueue = null;
@@ -54,5 +54,50 @@ export class FiberNode {
 		this.flags = NoFlags;
 		this.subtreeFlags = NoFlags;
 		this.deletions = null;
-    }
+	}
 }
+
+export class FiberRootNode {
+    container: Container;
+	current: FiberNode;
+	finishedWork: FiberNode | null;
+    constructor(container: Container, hostRootFiber: FiberNode) {
+		this.container = container;
+		this.current = hostRootFiber;
+		hostRootFiber.stateNode = this;
+		this.finishedWork = null;
+    }
+
+
+}
+
+//创建workInProgress
+export const createWorkInProgress = (
+	current: FiberNode,
+	pendingProps: Props
+): FiberNode => {
+	let wip = current.alternate;
+	if (wip === null) {
+		//mount
+		wip = new FiberNode(current.tag, pendingProps, current.key);
+		wip.tag = current.tag;
+		wip.stateNode = current.stateNode;
+
+		current.alternate = wip;
+		wip.alternate = current;
+	} else {
+		//update
+		wip.pendingProps = pendingProps;
+		wip.flags = NoFlags;
+		wip.subtreeFlags = NoFlags;
+		wip.deletions = null;
+	}
+	wip.type = current.type;
+	wip.updateQueue = current.updateQueue;
+	wip.child = current.child;
+	wip.memoizedState = current.memoizedState;
+	wip.memoizedProps = current.memoizedProps;
+	wip.ref = current.ref;
+
+	return wip;
+};
